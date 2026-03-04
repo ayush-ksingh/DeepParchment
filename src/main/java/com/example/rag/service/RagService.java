@@ -37,7 +37,9 @@ public class RagService {
                 PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(pdfResource,
                                 PdfDocumentReaderConfig.builder()
                                                 .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
-                                                                .withNumberOfBottomTextLinesToDelete(0)
+                                                                // Skip footers and headers to reduce noise
+                                                                .withNumberOfBottomTextLinesToDelete(3)
+                                                                .withNumberOfTopTextLinesToDelete(3)
                                                                 .withNumberOfTopPagesToSkipBeforeDelete(0)
                                                                 .build())
                                                 .withPagesPerDocument(1)
@@ -59,6 +61,10 @@ public class RagService {
                                                 .query(query)
                                                 .topK(5)
                                                 .build());
+
+                if (relevantContext == null) {
+                        relevantContext = java.util.List.of();
+                }
 
                 String contextString = relevantContext.stream()
                                 .map(Document::getText)

@@ -14,10 +14,12 @@
 - **Clean Code:** Adhere to SOLID principles, maintain stateless services where possible, and handle exceptions cleanly at the controller level.
 
 ## 3. Cold Memory State Tracker (Persistence)
-- **Current State:** Initial implementation phase. Base project structure exists.
+- **Current State:** Initial implementation phase. Building and refining the RAG pipeline.
 - **Completed Milestones:**
   - Maven project initialized with Spring AI dependencies.
   - Controller (`RagController`) and Service (`RagService`) skeletons created.
+  - Added null safety logic to `RagService.query()` to handle vector store search failure cases gracefully.
+  - Researched advanced strategies for smartly filtering irrelevant content from PDFs prior to embedding.
 - **Upcoming Milestones:**
   - PDF parsing logic using `spring-ai-pdf-document-reader`.
   - Database schema initialization for `pgvector`.
@@ -46,3 +48,11 @@
   - Employ Java/Maven specific scopes such as `(pom)`, `(core)`, `(api)`, or `(test)`.
   - *Example:* `feat(api): add vector search endpoint`
 - **Pushing Code:** Push to the current branch (`git push origin <branch>`), setting the upstream branch if it is not already set.
+
+## 7. Future Enhancements & Strategies
+### Smart Document Pre-Processing (PDF Extraction)
+Instead of brittle heuristic line-skipping, the following strategies should be considered for future implementation to improve embedding quality:
+1. **LLM as a Pre-processor (High Accuracy, High Cost):** Pass chunks through a lightweight LLM (e.g., `gpt-3.5-turbo` or `llama-3-8b`) prompting it to clean headers, footers, and garbage text, returning only core information.
+2. **Layout-Aware Parsing (Industry Standard):** Utilize layout analysis models (Unstructured.io, Azure Document Intelligence, AWS Textract) to classify document elements (`NarrativeText`, `Header`, `Table`) and embed only relevant narrative segments.
+3. **Heuristic/Regex Filtering (Fast & Practical):** Build a stream filter on `Document` objects before the `TokenTextSplitter`. Use Regex patterns to strip isolated numbers (page numbers), common URL patterns, or recurring 1-2 line footer strings.
+4. **Semantic Chunk Filtering (During Retrieval):** Use a Cross-Encoder or a pre-query LLM filter step to confirm if retrieved text (which might include junk like table of contents) is actually relevant to the query before generating the final answer.
