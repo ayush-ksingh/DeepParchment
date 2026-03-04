@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,8 +51,14 @@ public class RagService {
                 TokenTextSplitter textSplitter = new TokenTextSplitter(250, 50, 5, 10000, true);
                 List<Document> chunkedDocuments = textSplitter.apply(documents);
 
-                // 2. Add embeddings to pgvector
-                vectorStore.add(chunkedDocuments);
+                // 2. Add embeddings to pgvector (Using Parallel Streams for optimization)
+                int batchSize = 100;
+                List<List<Document>> batches = new ArrayList<>();
+                for (int i = 0; i < chunkedDocuments.size(); i += batchSize) {
+                        batches.add(chunkedDocuments.subList(i, Math.min(i + batchSize, chunkedDocuments.size())));
+                }
+
+                batches.parallelStream().forEach(vectorStore::add);
         }
 
         public String query(String query) {

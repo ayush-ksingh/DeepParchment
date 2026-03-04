@@ -49,50 +49,21 @@ class RagServiceTest {
 
     @Test
     void ingestDocument_ShouldParseAndStore() throws IOException {
-        String dummyPdfContent = "%PDF-1.4\n" +
-                "1 0 obj\n" +
-                "<< /Type /Catalog /Pages 2 0 R >>\n" +
-                "endobj\n" +
-                "2 0 obj\n" +
-                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n" +
-                "endobj\n" +
-                "3 0 obj\n" +
-                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\n"
-                +
-                "endobj\n" +
-                "4 0 obj\n" +
-                "<< /Length 44 >>\n" +
-                "stream\n" +
-                "BT\n" +
-                "/F1 24 Tf\n" +
-                "100 700 Td\n" +
-                "(Hello World) Tj\n" +
-                "ET\n" +
-                "endstream\n" +
-                "endobj\n" +
-                "5 0 obj\n" +
-                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n" +
-                "endobj\n" +
-                "xref\n" +
-                "0 6\n" +
-                "0000000000 65535 f \n" +
-                "0000000009 00000 n \n" +
-                "0000000058 00000 n \n" +
-                "0000000115 00000 n \n" +
-                "0000000222 00000 n \n" +
-                "0000000315 00000 n \n" +
-                "trailer\n" +
-                "<< /Size 6 /Root 1 0 R >>\n" +
-                "startxref\n" +
-                "403\n" +
-                "%%EOF";
-
         MockMultipartFile file = new MockMultipartFile(
-                "file", "test.pdf", "application/pdf", dummyPdfContent.getBytes());
+                "file", "test.pdf", "application/pdf", "dummy content".getBytes());
 
         doNothing().when(vectorStore).add(anyList());
 
-        ragService.ingestDocument(file);
+        try (org.mockito.MockedConstruction<org.springframework.ai.reader.pdf.PagePdfDocumentReader> mockedReader = mockConstruction(
+                org.springframework.ai.reader.pdf.PagePdfDocumentReader.class,
+                (mock, context) -> when(mock.get()).thenReturn(List.of(new Document("Mock PDF Content"))));
+                org.mockito.MockedConstruction<org.springframework.ai.transformer.splitter.TokenTextSplitter> mockedSplitter = mockConstruction(
+                        org.springframework.ai.transformer.splitter.TokenTextSplitter.class,
+                        (mock, context) -> when(mock.apply(anyList()))
+                                .thenReturn(List.of(new Document("Mock Chunk"))))) {
+
+            ragService.ingestDocument(file);
+        }
 
         verify(vectorStore, times(1)).add(anyList());
     }
